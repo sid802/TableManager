@@ -89,7 +89,7 @@ def row_gen_to_mysql(rows_gen, headers, table_dst, schema='gen_infos'):
 
     from mysql import connector
 
-    sql_type_field_string = ',\n'.join(map(lambda x: "{0} VARCHAR(255)".format(x), headers))
+    sql_type_field_string = ',\n'.join(map(lambda x: "{0} VARCHAR(1000)".format(x), headers))
 
     TABLE_CREATION_QUERY = """
                            CREATE TABLE IF NOT EXISTS {schema}.{table}
@@ -121,9 +121,16 @@ def row_gen_to_mysql(rows_gen, headers, table_dst, schema='gen_infos'):
     for rows_bulk in rows_gen:
         try:
             cursor.executemany(INSERT_ROW_QUERY, rows_bulk)
-        except Exception, e:
-            print "Could Not Insert bulk starting with:\n{0}".format(rows_bulk[0])
-            print e
+            db_conn.commit()
+        except connector.errors.DataError, e:
+            # Find faultive row
+            db_conn.rollback()  # Cancel rows that were just inserted before faultive
+            for row in rows_bulk:
+                try:
+                    cursor.execute(INSERT_ROW_QUERY, row)
+                except Exception, e:
+                    print 'Error in row: {0}'.format(row)
+            db_conn.commit()
 
     db_conn.commit()
 

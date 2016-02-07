@@ -28,16 +28,17 @@ def file_to_db(file_src_path, table_dst, file_src_ext='xlsx', has_headers=True, 
     :return:
     """
     if 'xls' in file_src_ext:
+        cols_types = file_iterators.get_xls_cols_types(file_src_path, has_headers=has_headers)
         rows_gen = file_iterators.excel_iterator(file_src_path)
     elif 'csv' in file_src_ext:
         rows_gen = file_iterators.csv_iterator(file_src_path)
     else:
         raise ImportException("Source file is of unknown format")
 
-    row_gen_to_db(rows_gen, table_dst, has_headers=has_headers, db_dst=db_dst, schema=schema)
+    row_gen_to_db(rows_gen, cols_types, table_dst, has_headers=has_headers, db_dst=db_dst, schema=schema)
 
 
-def row_gen_to_db(rows_gen, table_dst, has_headers=True, custom_headers=None, db_dst='mysql', schema='gen_infos'):
+def row_gen_to_db(rows_gen, field_types, table_dst, has_headers=True, custom_headers=None, db_dst='mysql', schema='gen_infos'):
     """
     :param rows_gen: Generator to rows we want to import (generator yielding data row)
     :param db_dst: database kind (Mysql/Oracle/Sqlite etc)
@@ -51,9 +52,9 @@ def row_gen_to_db(rows_gen, table_dst, has_headers=True, custom_headers=None, db
             headers = custom_headers
 
     if db_dst == TRGT_MYSQL:
-        row_gen_to_mysql(rows_gen, headers, table_dst, schema)
+        row_gen_to_mysql(rows_gen, field_types, headers, table_dst, schema)
     elif db_dst == TRGT_SQLITE:
-        row_gen_to_sqlite(rows_gen, headers, table_dst)
+        row_gen_to_sqlite(rows_gen, field_types, headers, table_dst)
     else:
         raise ImportException("Destination DB is unknown")
 
@@ -113,7 +114,7 @@ def row_gen_to_sqlite(rows_gen, headers, table_dst, db_path=None):
 
 
 
-def row_gen_to_mysql(rows_gen, headers, table_dst, schema='gen_infos'):
+def row_gen_to_mysql(rows_gen, field_types, headers, table_dst, schema='gen_infos'):
     """
     :param rows_gen: Data Row Generator
     :param headers: table headers
@@ -124,8 +125,6 @@ def row_gen_to_mysql(rows_gen, headers, table_dst, schema='gen_infos'):
     """
 
     from mysql import connector
-
-    sql_type_field_string = ',\n'.join(map(lambda x: "{0} VARCHAR(1000)".format(x), headers))
 
     TABLE_CREATION_QUERY = """
                            CREATE TABLE IF NOT EXISTS {schema}.{table}

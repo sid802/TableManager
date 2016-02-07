@@ -28,8 +28,8 @@ def file_to_db(file_src_path, table_dst, file_src_ext='xlsx', has_headers=True, 
     :return:
     """
     if 'xls' in file_src_ext:
-        cols_types = file_iterators.get_xls_cols_types(file_src_path, has_headers=has_headers)
-        rows_gen = file_iterators.excel_iterator(file_src_path)
+        cols_types, date_mode = file_iterators.get_xls_cols_types(file_src_path, has_headers=has_headers)
+        rows_gen = file_iterators.excel_iterator(file_src_path, cols_types, date_mode)
     elif 'csv' in file_src_ext:
         rows_gen = file_iterators.csv_iterator(file_src_path)
     else:

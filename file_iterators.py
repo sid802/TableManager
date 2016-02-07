@@ -1,7 +1,6 @@
 __author__ = 'Sid'
 
 from collections import Counter
-
 import xlrd, unicodecsv
 
 XLRD_TO_SQL_TYPE = {
@@ -12,9 +11,38 @@ XLRD_TO_SQL_TYPE = {
     4: 'TINYINT',
 }
 
+SQL_TO_PYTHON_TYPE = {
+    'VARCHAR2(4000)': str,
+    'NUMBER': float,
+    'DATETIME': xlrd.xldate.xldate_as_datetime,
+    'TINYINT': bool
+}
+
 DEFAULT_TYPE = 'VARCHAR2(4000)'
 
-def excel_iterator(excel_path, field_types, has_headers=True, bulk_amount=300):
+def reformat_values(values, sql_types, date_mode):
+    """
+    :param values: Original values
+    :param sql_types: target sql types ordered like values
+    :param date_mode: workbook's datemode
+    :return: list of values cast to their corresponding type
+    """
+
+    global SQL_TO_PYTHON_TYPE
+
+    new_values = []
+
+    zipped = zip(values, sql_types)
+    for value, target_sql_format in zipped:
+        if format.upper() != 'DATETIME':
+            target_python_format = SQL_TO_PYTHON_TYPE[target_sql_format]
+            new_value = target_python_format(value)
+        else:
+            new_value = target_python_format(value, date_mode)  # get a datetime tuple
+
+        new_values.append(new_value)
+
+def excel_iterator(excel_path, field_types, date_mode, has_headers=True, bulk_amount=300):
     """
     :param sheet: Sheet we want to iterate
     :param bulk_amount: Amount of rows we want to yield
@@ -34,7 +62,8 @@ def excel_iterator(excel_path, field_types, has_headers=True, bulk_amount=300):
 
     for row_index in xrange(first_data_row, sheet_src.nrows):
         row_values = sheet_src.row_values(row_index)
-        rows_to_yield.append(row_values)
+        reformatted_values = reformat_values(row_values, field_types, date_mode)
+        rows_to_yield.append(reformatted_values)
         if len(rows_to_yield) == bulk_amount:
             yield rows_to_yield
             rows_to_yield = []
@@ -71,8 +100,10 @@ def get_xlrd_xls_cols_types(file_src_path, has_headers=True):
     :return: list of column types, ordered like columns
     """
     wb = xlrd.open_workbook(file_src_path)
+    date_mode = wb.datemode
     sheet = wb.sheet_by_index(0)
-    return get_xlrd_cols_types(sheet)
+    cols_types = get_xlrd_cols_types(sheet)
+    return cols_types, date_mode
 
 def get_xlrd_cols_types(sheet, has_headers=True):
     """

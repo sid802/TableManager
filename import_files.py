@@ -28,7 +28,7 @@ def file_to_db(file_src_path, table_dst, file_src_ext='xlsx', has_headers=True, 
     :return:
     """
     if 'xls' in file_src_ext:
-        cols_types, date_mode = file_iterators.get_xls_cols_types(file_src_path, has_headers=has_headers)
+        cols_types, date_mode = file_iterators.get_xlrd_xls_cols_types(file_src_path, has_headers=has_headers)
         rows_gen = file_iterators.excel_iterator(file_src_path, cols_types, date_mode)
     elif 'csv' in file_src_ext:
         rows_gen = file_iterators.csv_iterator(file_src_path)
@@ -126,6 +126,10 @@ def row_gen_to_mysql(rows_gen, field_types, headers, table_dst, schema='gen_info
 
     from mysql import connector
 
+    zipped_fields = zip(headers, field_types)
+
+    sql_type_field_string = ',\n'.join(map(lambda x: "{0} {1}".format(x[0], x[1]), zipped_fields))
+
     TABLE_CREATION_QUERY = """
                            CREATE TABLE IF NOT EXISTS {schema}.{table}
                            (
@@ -133,7 +137,10 @@ def row_gen_to_mysql(rows_gen, field_types, headers, table_dst, schema='gen_info
                            )
                         """.format(schema=schema,
                                    table=table_dst,
-                                   fields=sql_type_field_string)
+                                   fields = sql_type_field_string
+                                   )
+
+    print TABLE_CREATION_QUERY
 
     INSERT_ROW_QUERY = """
                         INSERT INTO {schema}.{table}({header_names})

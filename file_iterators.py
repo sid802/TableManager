@@ -4,21 +4,21 @@ from collections import Counter
 import xlrd, unicodecsv
 
 XLRD_TO_SQL_TYPE = {
-    0: 'VARCHAR2(4000)',
-    1: 'VARCHAR2(4000)',
+    0: 'VARCHAR(4000)',
+    1: 'VARCHAR(4000)',
     2: 'NUMBER',
     3: 'DATETIME',
     4: 'TINYINT',
 }
 
 SQL_TO_PYTHON_TYPE = {
-    'VARCHAR2(4000)': str,
+    'VARCHAR(4000)': str,
     'NUMBER': float,
     'DATETIME': xlrd.xldate.xldate_as_datetime,
     'TINYINT': bool
 }
 
-DEFAULT_TYPE = 'VARCHAR2(4000)'
+DEFAULT_TYPE = 'VARCHAR(4000)'
 
 def reformat_values(values, sql_types, date_mode):
     """
@@ -34,13 +34,13 @@ def reformat_values(values, sql_types, date_mode):
 
     zipped = zip(values, sql_types)
     for value, target_sql_format in zipped:
-        if format.upper() != 'DATETIME':
-            target_python_format = SQL_TO_PYTHON_TYPE[target_sql_format]
+        target_python_format = SQL_TO_PYTHON_TYPE[target_sql_format]
+        if target_sql_format.upper() != 'DATETIME':
             new_value = target_python_format(value)
         else:
             new_value = target_python_format(value, date_mode)  # get a datetime tuple
-
         new_values.append(new_value)
+    return new_values
 
 def excel_iterator(excel_path, field_types, date_mode, has_headers=True, bulk_amount=300):
     """

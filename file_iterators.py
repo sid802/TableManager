@@ -35,11 +35,19 @@ def reformat_values(values, sql_types, date_mode):
     zipped = zip(values, sql_types)
     for value, target_sql_format in zipped:
         target_python_format = SQL_TO_PYTHON_TYPE[target_sql_format]
-        if target_sql_format.upper() != 'DATETIME':
-            new_value = target_python_format(value)
-        else:
-            new_value = target_python_format(value, date_mode)  # get a datetime tuple
+
+        # Try casting to target type
+        try:
+            if target_sql_format.upper() != 'DATETIME':
+                new_value = target_python_format(value)
+            else:
+                new_value = target_python_format(value, date_mode)  # get a datetime tuple
+        except Exception, e:
+            print "Failed casting <{0}> to {1} format\r\nerror: {2}".format(value, target_python_format, e.message)
+            new_value = None
+
         new_values.append(new_value)
+
     return new_values
 
 def excel_iterator(excel_path, field_types, date_mode, has_headers=True, bulk_amount=300):

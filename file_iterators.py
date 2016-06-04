@@ -4,21 +4,22 @@ from collections import Counter
 import xlrd, unicodecsv
 
 XLRD_TO_SQL_TYPE = {
-    0: 'VARCHAR(4000)',
-    1: 'VARCHAR(4000)',
-    2: 'NUMBER',
+    0: 'VARCHAR(255)',
+    1: 'VARCHAR(255)',
+    2: 'DOUBLE',
     3: 'DATETIME',
     4: 'TINYINT',
 }
 
 SQL_TO_PYTHON_TYPE = {
-    'VARCHAR(4000)': str,
+    'VARCHAR(255)': unicode,
     'NUMBER': float,
+    'DOUBLE': float,
     'DATETIME': xlrd.xldate.xldate_as_datetime,
     'TINYINT': bool
 }
 
-DEFAULT_TYPE = 'VARCHAR(4000)'
+DEFAULT_TYPE = 'VARCHAR(255)'
 
 def reformat_values(values, sql_types, date_mode):
     """
@@ -43,7 +44,7 @@ def reformat_values(values, sql_types, date_mode):
             else:
                 new_value = target_python_format(value, date_mode)  # get a datetime tuple
         except Exception, e:
-            print "Failed casting <{0}> to {1} format\r\nerror: {2}".format(value, target_python_format, e.message)
+            print u"Failed casting <{0}> to {1} format\r\nerror: {2}".format(value, target_python_format, e.message)
             new_value = None
 
         new_values.append(new_value)
